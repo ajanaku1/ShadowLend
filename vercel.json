@@ -6,7 +6,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://shadowlend-agent.up.railway.app/:path*"
+      "destination": "https://shadowlend.onrender.com/:path*"
     },
     {
       "source": "/(.*)",
