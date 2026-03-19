@@ -7,6 +7,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://shadowlend-agent.up.railway.app/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
