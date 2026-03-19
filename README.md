@@ -49,11 +49,16 @@ ShadowLend lets borrowers get loans based on creditworthiness, not collateral. A
 
 | Contract | Address | Purpose | FHE Operations |
 |----------|---------|---------|----------------|
-| CreditScore | `0x...` | Encrypted score storage + threshold check | `fromExternal`, `ge`, `allowThis`, `allow` |
-| LendingPool | `0x16cF...D00f` | Loan lifecycle, decryption marking, proof verification | `makePubliclyDecryptable`, `checkSignatures`, `toBytes32` |
-| Orchestrator | `0xf4E0...7e2e` | Coordinates contracts, manages scorer roles | None (coordinator) |
-| ShadowLendVault (USD3) | `0xdA4e...37e2e` | ERC4626 yield vault for lenders | None |
-| MockUSDC | `0x1123...B3a6` | Test USDC token | None |
+| [CreditScore](https://sepolia.etherscan.io/address/0x7384b26858aCbC14d2aD2473b0Ab7568d1114653) | `0x7384...4653` | Encrypted score storage + threshold check | `fromExternal`, `ge`, `allowThis`, `allow` |
+| [LendingPool](https://sepolia.etherscan.io/address/0x16cF583dFA5F7C06015f028F04596A46636dD00f) | `0x16cF...D00f` | Loan lifecycle, decryption marking, proof verification | `makePubliclyDecryptable`, `checkSignatures`, `toBytes32` |
+| [Orchestrator](https://sepolia.etherscan.io/address/0xf4E09ce9caA06E18f28f6faF033d9b8af54B8675) | `0xf4E0...7e75` | Coordinates contracts, manages scorer roles | None (coordinator) |
+| [ShadowLendVault](https://sepolia.etherscan.io/address/0xdA4e83bC9046498F6Fe13Ea9C21DAB664D337e2e) | `0xdA4e...37e2e` | ERC4626 yield vault for lenders | None |
+| [MockUSDC](https://sepolia.etherscan.io/address/0x11235C6C7Fe39b17E68591B31010a6535FE4B3a6) | `0x1123...B3a6` | Test USDC token | None |
+
+Example FHE transactions on-chain:
+- [submitScore (encrypted credit score)](https://sepolia.etherscan.io/tx/0x1b9cc5287f4d64f659e6e0ed56401cb27f10bfc1f276ce5317dfbcef839121c0)
+- [requestLoan (homomorphic threshold check)](https://sepolia.etherscan.io/tx/0xad93555036d311291ea6fd74f4b96468d977f49447aacae0de19898a849993df)
+- [repayLoan](https://sepolia.etherscan.io/tx/0xc520b20180423defe8901827f40acac851dfc56177e1c5f5cb22f4cbdb7dda14)
 
 ---
 

@@ -16,6 +16,24 @@ ShadowLend enables **fully private credit verification** using Zama fhEVM. An AI
 - **Modular orchestration** — Scorer agents can be rotated, policy thresholds updated, and contract addresses swapped without redeployment.
 - **Live on Ethereum Sepolia** — All contracts deployed and verified, real FHE coprocessor interaction, real KMS decryption.
 
+## On-Chain Proof (Ethereum Sepolia)
+
+Real FHE transactions on Sepolia, verifiable on Etherscan:
+
+| Operation | Tx Hash | What It Proves |
+|-----------|---------|----------------|
+| **submitScore** (FHE.fromExternal) | [0x1b9cc528...](https://sepolia.etherscan.io/tx/0x1b9cc5287f4d64f659e6e0ed56401cb27f10bfc1f276ce5317dfbcef839121c0) | Encrypted credit score submitted on-chain as euint32 ciphertext |
+| **submitScore** (FHE.fromExternal) | [0x27f42e53...](https://sepolia.etherscan.io/tx/0x27f42e5328c04d3f1a2debc75cf0abae3196a74c5a57dbb66e69aeb994f98e8e) | Second encrypted score submission |
+| **requestLoan** (FHE.ge + makePubliclyDecryptable) | [0xad935550...](https://sepolia.etherscan.io/tx/0xad93555036d311291ea6fd74f4b96468d977f49447aacae0de19898a849993df) | Homomorphic comparison on encrypted score, eligibility marked for decryption |
+| **requestLoan** | [0x07a2d9a8...](https://sepolia.etherscan.io/tx/0x07a2d9a8c7cf581cffc0cab19c4795eb13e0e3e76d235f4c17a6facfdd27aeed) | Second loan request with FHE threshold check |
+| **repayLoan** | [0xc520b201...](https://sepolia.etherscan.io/tx/0xc520b20180423defe8901827f40acac851dfc56177e1c5f5cb22f4cbdb7dda14) | Borrower repayment with 5% fee |
+
+View all contract activity:
+- [CreditScore contract](https://sepolia.etherscan.io/address/0x7384b26858aCbC14d2aD2473b0Ab7568d1114653)
+- [Orchestrator contract](https://sepolia.etherscan.io/address/0xf4E09ce9caA06E18f28f6faF033d9b8af54B8675)
+- [LendingPool contract](https://sepolia.etherscan.io/address/0x16cF583dFA5F7C06015f028F04596A46636dD00f)
+- [Vault (USD3) contract](https://sepolia.etherscan.io/address/0xdA4e83bC9046498F6Fe13Ea9C21DAB664D337e2e)
+
 ## Technical Metrics
 
 | Metric | Value |
