@@ -128,6 +128,43 @@ FHE operations used (v0.9+ API):
 - **Rate limiting & cooldowns** — Throttle re-scoring attempts to prevent brute-force signal optimization
 - **Agent rotation & multi-agent consensus** — Multiple independent scoring agents must agree before score submission, preventing single-agent compromise
 
+## Risk Model & Default Economics
+
+Undercollateralized lending carries credit risk. ShadowLend's fee structure and scoring model are designed to keep the pool solvent across realistic default scenarios.
+
+### Fee Structure
+
+| Parameter | Value |
+|-----------|-------|
+| Origination fee | 5% of borrowed amount (500 basis points) |
+| Interest rate | 2%-8% APR (dynamic, inversely proportional to score) |
+| Score threshold | 650 minimum (filters bottom ~30% of applicants) |
+| Max borrow per wallet | $1,000 (score 650) to $10,000 (score 850) |
+
+### Default Scenario Analysis
+
+Assumptions: 100 borrowers, average loan $4,000, average score 720.
+
+| Scenario | Default Rate | Pool Loss | Fee Revenue (5%) | Net Pool Impact |
+|----------|-------------|-----------|-------------------|-----------------|
+| Optimistic | 3% | $12,000 | $20,000 | +$8,000 |
+| Baseline | 7% | $28,000 | $20,000 + $8,400 APR | +$400 |
+| Stress | 12% | $48,000 | $20,000 + $14,400 APR | -$13,600 |
+
+### How the Scoring Model Mitigates Risk
+
+1. **AI cross-referencing reduces fraud.** The Groq agent compares stated income against uploaded documents. Contradictions trigger score penalties of up to -200 points, pushing fraudulent applicants below the 650 threshold.
+2. **Higher-risk borrowers pay more.** A borrower scoring 650 pays 8% APR and can only borrow $1,000. A borrower scoring 850 pays 2% APR but borrows up to $10,000. The fee curve concentrates revenue on riskier loans.
+3. **Threshold filtering removes the tail.** The 650 cutoff eliminates the highest-default cohort before they ever reach the pool.
+4. **Pool diversification.** Lenders deposit into a shared ERC4626 vault. Individual defaults are absorbed by the pool, not by a single lender. Lenders see only aggregate utilization and APY.
+
+### Planned Risk Enhancements
+
+- **Dynamic threshold adjustment** based on pool utilization (raise threshold when utilization > 80%)
+- **Per-wallet borrow cooldowns** to prevent rapid re-borrowing after repayment
+- **On-chain reputation multiplier** using DeFi history as an additional encrypted signal
+- **Insurance reserve** from a percentage of fees, held in the vault as a first-loss buffer
+
 ## GTM Plan
 
 1. **Web3 payroll integration** — Partner with payroll platforms to offer private credit lines to DAO contributors, using on-chain payment history as encrypted input signals
