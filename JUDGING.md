@@ -1,5 +1,7 @@
 # ShadowLend — Hackathon Submission
 
+**Sponsor Bounty: [Zama](https://www.zama.org/) fhEVM** | Live on Ethereum Sepolia | [Demo](https://shadowlend-cyan.vercel.app)
+
 ## Problem
 
 Undercollateralized lending is inaccessible to many users because traditional credit checks leak sensitive financial data and require centralized intermediaries. Even in DeFi, credit-based lending either exposes borrower data or relies on centralized oracles that can see raw scores.

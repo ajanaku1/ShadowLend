@@ -419,7 +419,8 @@ export default function Landing() {
             <div className="tn-logo" style={{ width: 20, height: 20 }}>
               <img src="/logo.png" alt="ShadowLend" />
             </div>
-            <span style={{ fontSize: 13, color: "var(--text3)" }}>ShadowLend — Built on Zama fhEVM</span>
+            <span style={{ fontSize: 13, color: "var(--text3)" }}>ShadowLend — Powered by </span>
+            <a href="https://www.zama.org/" target="_blank" rel="noopener noreferrer" style={{ color: "#818cf8", fontWeight: 700, fontSize: 13, textDecoration: "none" }}>Zama fhEVM</a>
           </div>
           <div className="lf-right">
             <span style={{ fontSize: 12, color: "var(--text3)" }}>PL Genesis Hackathon 2026</span>

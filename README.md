@@ -8,6 +8,7 @@ Undercollateralized lending where your credit score stays fully encrypted on-cha
 [![Groq](https://img.shields.io/badge/Groq-Llama_3.3--70B-f55036)](https://groq.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-56_passing-brightgreen)]()
+[![Zama Bounty](https://img.shields.io/badge/Sponsor_Bounty-Zama_fhEVM-6366f1?style=for-the-badge)](https://www.zama.org/)
 
 ![Architecture](docs/images/architecture.svg)
 
