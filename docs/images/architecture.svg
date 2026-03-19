@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#010104"/>
+      <stop offset="100%" stop-color="#07071a"/>
+    </linearGradient>
+    <linearGradient id="indigo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+    <linearGradient id="teal-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2dd4bf"/>
+      <stop offset="100%" stop-color="#5eead4"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="680" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="600" y="45" text-anchor="middle" fill="#f1eeff" font-size="22" font-weight="800" letter-spacing="-0.5">ShadowLend Architecture</text>
+  <text x="600" y="68" text-anchor="middle" fill="#8e88a8" font-size="13" font-weight="500">Privacy-preserving credit scoring with Fully Homomorphic Encryption</text>
+
+  <!-- ═══ BORROWER BOX ═══ -->
+  <rect x="30" y="130" width="170" height="200" rx="14" fill="#0b0b28" stroke="#6366f1" stroke-opacity="0.2" stroke-width="1.5"/>
+  <circle cx="115" cy="175" r="24" fill="#6366f1" fill-opacity="0.12" stroke="#818cf8" stroke-width="1.5"/>
+  <text x="115" y="180" text-anchor="middle" fill="#818cf8" font-size="20">&#x1F464;</text>
+  <text x="115" y="215" text-anchor="middle" fill="#f1eeff" font-size="15" font-weight="700">Borrower</text>
+  <text x="115" y="238" text-anchor="middle" fill="#8e88a8" font-size="11">Wallet + Docs</text>
+  <text x="115" y="258" text-anchor="middle" fill="#8e88a8" font-size="10">Income, Debt,</text>
+  <text x="115" y="273" text-anchor="middle" fill="#8e88a8" font-size="10">Employment, Payments</text>
+  <!-- Never sees score badge -->
+  <rect x="52" y="290" width="126" height="24" rx="6" fill="#fb7185" fill-opacity="0.1" stroke="#fb7185" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="115" y="306" text-anchor="middle" fill="#fb7185" font-size="10" font-weight="600">Never sees raw score</text>
+
+  <!-- ═══ ARROW: Borrower → Agent ═══ -->
+  <line x1="200" y1="220" x2="270" y2="220" stroke="#818cf8" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <polygon points="270,215 280,220 270,225" fill="#818cf8"/>
+  <text x="240" y="210" text-anchor="middle" fill="#8e88a8" font-size="9">POST /score</text>
+
+  <!-- ═══ AI AGENT BOX ═══ -->
+  <rect x="280" y="105" width="220" height="260" rx="14" fill="#0b0b28" stroke="#6366f1" stroke-opacity="0.2" stroke-width="1.5"/>
+  <rect x="300" y="120" width="180" height="28" rx="6" fill="#6366f1" fill-opacity="0.1"/>
+  <text x="390" y="139" text-anchor="middle" fill="#818cf8" font-size="13" font-weight="700">AI Agent Server</text>
+
+  <!-- Step 1 -->
+  <rect x="300" y="160" width="180" height="36" rx="8" fill="#07071a" stroke="#4c4669" stroke-width="1"/>
+  <text x="310" y="176" fill="#fbbf24" font-size="10" font-weight="700">1</text>
+  <text x="328" y="176" fill="#f1eeff" font-size="11" font-weight="500">Groq Llama 3.3-70B</text>
+  <text x="328" y="190" fill="#8e88a8" font-size="9">Score borrower 300-850</text>
+
+  <!-- Step 2 -->
+  <rect x="300" y="204" width="180" height="36" rx="8" fill="#07071a" stroke="#4c4669" stroke-width="1"/>
+  <text x="310" y="220" fill="#fbbf24" font-size="10" font-weight="700">2</text>
+  <text x="328" y="220" fill="#f1eeff" font-size="11" font-weight="500">Llama 4 Scout Vision</text>
+  <text x="328" y="234" fill="#8e88a8" font-size="9">Verify uploaded documents</text>
+
+  <!-- Step 3 -->
+  <rect x="300" y="248" width="180" height="36" rx="8" fill="#07071a" stroke="#2dd4bf" stroke-width="1.5"/>
+  <text x="310" y="264" fill="#fbbf24" font-size="10" font-weight="700">3</text>
+  <text x="328" y="264" fill="#2dd4bf" font-size="11" font-weight="600">Encrypt with TFHE</text>
+  <text x="328" y="278" fill="#8e88a8" font-size="9">@zama-fhe/relayer-sdk</text>
+
+  <!-- Lock icon -->
+  <rect x="300" y="296" width="180" height="28" rx="6" fill="#2dd4bf" fill-opacity="0.08"/>
+  <text x="390" y="314" text-anchor="middle" fill="#2dd4bf" font-size="10" font-weight="600">&#x1F512; Score encrypted, never stored</text>
+
+  <!-- Score crossed out -->
+  <rect x="310" y="336" width="65" height="20" rx="4" fill="#fb7185" fill-opacity="0.1" stroke="#fb7185" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="342" y="350" text-anchor="middle" fill="#fb7185" font-size="10" font-weight="600" text-decoration="line-through">Score: 738</text>
+  <text x="385" y="350" fill="#fb7185" font-size="12">&#x2717;</text>
+
+  <!-- Encrypted output -->
+  <rect x="400" y="336" width="80" height="20" rx="4" fill="#2dd4bf" fill-opacity="0.1" stroke="#2dd4bf" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="440" y="350" text-anchor="middle" fill="#2dd4bf" font-size="10" font-weight="600">0x7a3f...e8</text>
+  <text x="488" y="350" fill="#4ade80" font-size="12">&#x2713;</text>
+
+  <!-- ═══ ARROW: Agent → Blockchain ═══ -->
+  <line x1="500" y1="270" x2="570" y2="270" stroke="#2dd4bf" stroke-width="2"/>
+  <polygon points="570,265 582,270 570,275" fill="#2dd4bf"/>
+  <text x="540" y="256" text-anchor="middle" fill="#2dd4bf" font-size="9" font-weight="600">euint32</text>
+  <text x="540" y="288" text-anchor="middle" fill="#8e88a8" font-size="8">encrypted</text>
+
+  <!-- ═══ BLOCKCHAIN BOX ═══ -->
+  <rect x="582" y="95" width="290" height="310" rx="14" fill="#0b0b28" stroke="#6366f1" stroke-opacity="0.25" stroke-width="1.5"/>
+  <rect x="602" y="110" width="250" height="28" rx="6" fill="#6366f1" fill-opacity="0.1"/>
+  <text x="727" y="129" text-anchor="middle" fill="#818cf8" font-size="13" font-weight="700">Ethereum Sepolia (Zama fhEVM)</text>
+
+  <!-- CreditScore.sol -->
+  <rect x="602" y="150" width="250" height="52" rx="10" fill="#07071a" stroke="#6366f1" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="616" y="170" fill="#f1eeff" font-size="12" font-weight="700">CreditScore.sol</text>
+  <text x="616" y="190" fill="#818cf8" font-size="10">FHE.fromExternal() + FHE.ge(score, 650)</text>
+
+  <!-- LendingPool.sol -->
+  <rect x="602" y="212" width="250" height="52" rx="10" fill="#07071a" stroke="#6366f1" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="616" y="232" fill="#f1eeff" font-size="12" font-weight="700">LendingPool.sol</text>
+  <text x="616" y="252" fill="#818cf8" font-size="10">FHE.makePubliclyDecryptable()</text>
+
+  <!-- Orchestrator -->
+  <rect x="602" y="274" width="250" height="42" rx="10" fill="#07071a" stroke="#4c4669" stroke-width="1"/>
+  <text x="616" y="294" fill="#f1eeff" font-size="12" font-weight="700">Orchestrator.sol</text>
+  <text x="616" y="308" fill="#8e88a8" font-size="10">Coordinates + emits events</text>
+
+  <!-- Vault -->
+  <rect x="602" y="326" width="250" height="42" rx="10" fill="#07071a" stroke="#2dd4bf" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="616" y="346" fill="#f1eeff" font-size="12" font-weight="700">ShadowLendVault (USD3)</text>
+  <text x="616" y="360" fill="#2dd4bf" font-size="10">ERC4626 yield vault</text>
+
+  <!-- What blockchain sees -->
+  <rect x="602" y="378" width="250" height="20" rx="4" fill="#2dd4bf" fill-opacity="0.06"/>
+  <text x="727" y="392" text-anchor="middle" fill="#2dd4bf" font-size="10" font-weight="600">Only sees: encrypted ciphertext + boolean</text>
+
+  <!-- ═══ ARROW: Blockchain → Lender ═══ -->
+  <line x1="872" y1="345" x2="930" y2="345" stroke="#4ade80" stroke-width="1.5"/>
+  <polygon points="930,340 942,345 930,350" fill="#4ade80"/>
+  <text x="905" y="334" text-anchor="middle" fill="#8e88a8" font-size="9">yield</text>
+
+  <!-- ═══ LENDER BOX ═══ -->
+  <rect x="942" y="260" width="170" height="190" rx="14" fill="#0b0b28" stroke="#6366f1" stroke-opacity="0.2" stroke-width="1.5"/>
+  <circle cx="1027" cy="305" r="24" fill="#2dd4bf" fill-opacity="0.12" stroke="#2dd4bf" stroke-width="1.5"/>
+  <text x="1027" y="310" text-anchor="middle" fill="#2dd4bf" font-size="20">&#x1F4B0;</text>
+  <text x="1027" y="345" text-anchor="middle" fill="#f1eeff" font-size="15" font-weight="700">Lender</text>
+  <text x="1027" y="366" text-anchor="middle" fill="#8e88a8" font-size="11">Deposits USDC</text>
+  <text x="1027" y="383" text-anchor="middle" fill="#8e88a8" font-size="11">Earns USD3 yield</text>
+  <!-- Never sees data badge -->
+  <rect x="964" y="400" width="126" height="24" rx="6" fill="#fb7185" fill-opacity="0.1" stroke="#fb7185" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="1027" y="416" text-anchor="middle" fill="#fb7185" font-size="10" font-weight="600">Never sees borrower data</text>
+
+  <!-- ═══ KMS DECRYPTION FLOW ═══ -->
+  <rect x="582" y="430" width="290" height="50" rx="10" fill="#07071a" stroke="#fbbf24" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="600" y="452" fill="#fbbf24" font-size="11" font-weight="700">&#x1F511; Zama KMS Decryption</text>
+  <text x="600" y="470" fill="#8e88a8" font-size="10">publicDecrypt() → KMS proof → FHE.checkSignatures()</text>
+
+  <!-- Arrow: KMS back to borrower -->
+  <line x1="582" y1="455" x2="200" y2="455" stroke="#fbbf24" stroke-width="1" stroke-dasharray="6,4"/>
+  <polygon points="200,450 188,455 200,460" fill="#fbbf24"/>
+  <text x="390" y="445" text-anchor="middle" fill="#fbbf24" font-size="9">boolean result + proof (never the score)</text>
+
+  <!-- ═══ ARROW: Borrower gets USDC ═══ -->
+  <path d="M 115 330 L 115 520 L 727 520 L 727 490" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="6,4" fill="none"/>
+  <polygon points="722,490 727,478 732,490" fill="#4ade80"/>
+  <text x="420" y="514" text-anchor="middle" fill="#4ade80" font-size="10" font-weight="600">If approved: USDC transferred to borrower</text>
+
+  <!-- ═══ BOTTOM BAR ═══ -->
+  <rect x="30" y="560" width="1140" height="90" rx="14" fill="#0b0b28" stroke="#6366f1" stroke-opacity="0.1" stroke-width="1"/>
+
+  <!-- FHE Operations -->
+  <text x="60" y="585" fill="#818cf8" font-size="11" font-weight="700">6 FHE Operations</text>
+  <text x="60" y="603" fill="#8e88a8" font-size="10">fromExternal  |  ge  |  allowThis  |  makePubliclyDecryptable  |  toBytes32  |  checkSignatures</text>
+
+  <!-- Key Guarantee -->
+  <text x="60" y="632" fill="#f1eeff" font-size="12" font-weight="700">Privacy Guarantee:</text>
+  <text x="208" y="632" fill="#2dd4bf" font-size="12" font-weight="500">The raw credit score is never visible to any on-chain participant.</text>
+
+  <!-- Powered by Zama -->
+  <rect x="980" y="575" width="170" height="55" rx="10" fill="#6366f1" fill-opacity="0.08" stroke="#6366f1" stroke-opacity="0.2" stroke-width="1"/>
+  <text x="1065" y="598" text-anchor="middle" fill="#8e88a8" font-size="11">Powered by</text>
+  <text x="1065" y="620" text-anchor="middle" fill="#f1eeff" font-size="18" font-weight="800" letter-spacing="3">ZAMA</text>
+</svg>

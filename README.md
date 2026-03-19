@@ -9,8 +9,7 @@ Undercollateralized lending where your credit score stays fully encrypted on-cha
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-56_passing-brightgreen)]()
 
-<!-- TODO: Add screenshot -->
-<!-- ![Hero](docs/images/landing.png) -->
+![Architecture](docs/images/architecture.svg)
 
 ---
 
