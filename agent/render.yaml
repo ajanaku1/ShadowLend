@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: shadowlend-agent
+    runtime: node
+    rootDir: agent
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: GROQ_API_KEY
+        sync: false
+      - key: SCORER_PRIVATE_KEY
+        sync: false
+      - key: CREDIT_SCORE_ADDRESS
+        sync: false
+      - key: FHEVM_RPC_URL
+        value: https://ethereum-sepolia-rpc.publicnode.com
+      - key: AGENT_API_KEY
+        value: demo-key
