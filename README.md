@@ -14,6 +14,21 @@ Undercollateralized lending where your credit score stays fully encrypted on-cha
 
 ---
 
+## Try It Live
+
+**[Launch ShadowLend](https://shadowlend-cyan.vercel.app)** (Sepolia testnet)
+
+1. Open the app and click **Connect Wallet** (MetaMask on Sepolia).
+2. The faucet auto-drops 1,000 test USDC to your wallet.
+3. Fill in sample financial data and upload any document (bank statement, pay stub).
+4. Click **Submit for Encrypted Scoring**. The AI scores you, encrypts the result with TFHE, and submits it on-chain.
+5. If eligible, select an amount and click **Borrow**. The contract checks your encrypted score homomorphically and transfers USDC.
+6. Visit the **Supply** page to deposit USDC as a lender and earn USD3 vault tokens.
+
+No real funds involved. All contracts are on Ethereum Sepolia.
+
+---
+
 ## What Is ShadowLend?
 
 ShadowLend lets borrowers get loans based on creditworthiness, not collateral. An AI agent scores your financial data off-chain, encrypts the score with fully homomorphic encryption (TFHE), and submits it on-chain. The smart contract verifies `score >= 650` without ever decrypting it. No one sees your score. Not the lender, not the blockchain, not the UI.
