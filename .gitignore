@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Environment (secrets)
+.env
+.env.local
+.env.*.local
+
+# Hardhat
+artifacts/
+cache/
+typechain-types/
+coverage/
+coverage.json
+
+# Frontend build
+frontend/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Local
+.claude/
+.vercel
+*.log
+
+# Build
+remotion/out/
+
+# Deployment artifacts
+.openzeppelin/
+fhevmTemp/
+
+# Junk
+ffmpeg.zip
+ai/
+
+# Non-final video clips (keep only remotion/public/clips/final/)
+remotion/public/clips/*.mp4
