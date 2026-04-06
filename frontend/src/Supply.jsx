@@ -1,8 +1,46 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Component } from "react";
 import { ethers } from "ethers";
 import { Link } from "react-router-dom";
 import contractAddresses from "./contracts.json";
 import { USDC_ABI, ORCHESTRATOR_ABI, LENDING_POOL_ABI, VAULT_ABI, FHEVM_CHAIN_ID } from "./config/constants";
+
+// ---------------------------------------------------------------------------
+// Error Boundary — prevents blank screen in production
+// ---------------------------------------------------------------------------
+class SupplyErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    console.error("Supply page error:", error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, padding: 32, background: "#010104", color: "#f1eeff" }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700 }}>Something went wrong</h2>
+          <p style={{ color: "#8e88a8", fontSize: 14, maxWidth: 400, textAlign: "center" }}>
+            The Supply page encountered an error. This may be due to network issues with the blockchain RPC.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ padding: "10px 24px", borderRadius: 10, background: "#6366f1", color: "#fff", border: "none", cursor: "pointer", fontWeight: 600 }}
+          >
+            Reload Page
+          </button>
+          <pre style={{ fontSize: 11, color: "#4c4669", maxWidth: 500, overflow: "auto", marginTop: 8 }}>
+            {this.state.error?.message}
+          </pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Config
@@ -14,7 +52,7 @@ const RPC_URL = "https://ethereum-sepolia-rpc.publicnode.com";
 // ===========================================================================
 // Supply
 // ===========================================================================
-export default function Supply() {
+function SupplyInner() {
   // --- wallet ---
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
@@ -892,5 +930,13 @@ export default function Supply() {
         }
       `}</style>
     </>
+  );
+}
+
+export default function Supply() {
+  return (
+    <SupplyErrorBoundary>
+      <SupplyInner />
+    </SupplyErrorBoundary>
   );
 }
