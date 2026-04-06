@@ -26,9 +26,9 @@ export default function Supply() {
   const [depositInput, setDepositInput] = useState("");
 
   // --- pool stats (live from chain) ---
-  const [poolBalance, setPoolBalance] = useState(null);
-  const [totalBorrowed, setTotalBorrowed] = useState(null);
-  const [loanCount, setLoanCount] = useState(null);
+  const [poolBalance, setPoolBalance] = useState(0);
+  const [totalBorrowed, setTotalBorrowed] = useState(0);
+  const [loanCount, setLoanCount] = useState(0);
   const [defaultRate] = useState(0); // no defaults on testnet yet
   const [statsLoading, setStatsLoading] = useState(true);
 
@@ -305,7 +305,7 @@ export default function Supply() {
   // Yield calculator
   // ---------------------------------------------------------------------------
   const yieldAmount = Number(yieldInput) || 0;
-  const utilization = poolBalance != null && totalBorrowed != null && (poolBalance + totalBorrowed) > 0
+  const utilization = (poolBalance + totalBorrowed) > 0
     ? (totalBorrowed / (poolBalance + totalBorrowed)) * 100
     : 0;
   // Base APY scales with utilization: 2% base + up to 6% at high utilization
