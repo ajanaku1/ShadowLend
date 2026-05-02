@@ -17,10 +17,18 @@ interface ILendingPool {
     function setCreditThreshold(uint32 newThreshold) external;
     function setFeeBasisPoints(uint256 newFeeBps) external;
     function requestLoanFor(address borrower, uint256 amount) external returns (uint256);
-    function finalizeLoan(uint256 requestId, bool decryptedEligible, bytes memory decryptionProof) external;
+    function finalizeLoan(
+        uint256 requestId,
+        bool    decryptedEligible,
+        uint256 decryptedMaxLoan,
+        uint256 decryptedRateBps,
+        bytes memory decryptionProof
+    ) external;
     function repayLoanFor(address borrower, uint256 amount) external;
     function loans(address borrower) external view returns (uint256 amount, uint256 remaining, uint256 totalOwed, uint256 timestamp, bool repaid);
     function getEligibilityHandle(uint256 requestId) external view returns (bytes32);
+    function getMaxLoanHandle(uint256 requestId) external view returns (bytes32);
+    function getRateHandle(uint256 requestId) external view returns (bytes32);
     function creditThreshold() external view returns (uint32);
     function feeBasisPoints() external view returns (uint256);
 }
@@ -103,14 +111,34 @@ contract ShadowLendOrchestrator is Initializable, OwnableUpgradeable, PausableUp
         return requestId;
     }
 
-    /// @notice Finalize a loan after off-chain decryption via relayer SDK.
-    function finalizeLoan(uint256 requestId, bool decryptedEligible, bytes memory decryptionProof) external whenNotPaused {
-        ILendingPool(lendingPool).finalizeLoan(requestId, decryptedEligible, decryptionProof);
+    /// @notice Finalize a loan after off-chain decryption of eligibility + loan terms.
+    function finalizeLoan(
+        uint256 requestId,
+        bool    decryptedEligible,
+        uint256 decryptedMaxLoan,
+        uint256 decryptedRateBps,
+        bytes memory decryptionProof
+    ) external whenNotPaused {
+        ILendingPool(lendingPool).finalizeLoan(
+            requestId,
+            decryptedEligible,
+            decryptedMaxLoan,
+            decryptedRateBps,
+            decryptionProof
+        );
     }
 
-    /// @notice Get the eligibility handle for a pending loan request.
+    /// @notice Get FHE handles for off-chain decryption via relayer SDK.
     function getEligibilityHandle(uint256 requestId) external view returns (bytes32) {
         return ILendingPool(lendingPool).getEligibilityHandle(requestId);
+    }
+
+    function getMaxLoanHandle(uint256 requestId) external view returns (bytes32) {
+        return ILendingPool(lendingPool).getMaxLoanHandle(requestId);
+    }
+
+    function getRateHandle(uint256 requestId) external view returns (bytes32) {
+        return ILendingPool(lendingPool).getRateHandle(requestId);
     }
 
     /// @notice Repay part or all of an outstanding loan. Always allowed even when paused.

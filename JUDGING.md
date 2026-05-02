@@ -1,174 +1,200 @@
-# ShadowLend — Hackathon Submission
+# ShadowLend: Hackathon Submission
 
 **Sponsor Bounty: [Zama](https://www.zama.org/) fhEVM** | Live on Ethereum Sepolia | [Demo](https://shadowlend-cyan.vercel.app)
 
 ## Problem
 
-Undercollateralized lending is inaccessible to many users because traditional credit checks leak sensitive financial data and require centralized intermediaries. Even in DeFi, credit-based lending either exposes borrower data or relies on centralized oracles that can see raw scores.
+Undercollateralized lending is hard to do privately. Traditional credit checks expose sensitive financial data to intermediaries. In DeFi, credit-based lending either puts the score on-chain in plaintext or relies on a centralized oracle that can see it. Neither is acceptable for a privacy-first protocol.
 
 ## Solution
 
-ShadowLend enables **fully private credit verification** using Zama fhEVM. An AI agent (Groq/Llama) computes a credit score off-chain from borrower-submitted financial signals, encrypts it with TFHE, and submits the ciphertext on-chain. The lending contract verifies `score >= 650` **homomorphically** — performing the comparison on encrypted data — and releases USDC only if the condition is met. The raw score is never visible to the contract, lenders, or the frontend.
+ShadowLend lets borrowers get loans based on creditworthiness without exposing the score to anyone. An AI agent (Groq/Llama) scores financial signals off-chain, encrypts the result with TFHE, and submits the ciphertext on-chain. The lending contract checks `score >= 650` using `FHE.ge()`: the comparison runs on encrypted data. Loan terms (max borrow, interest rate) are computed with FHE arithmetic on the same ciphertext. No party ever sees the raw score.
 
-## Technical Novelty
+## What's new since the original submission
 
-- **Encrypted threshold comparison** — `FHE.ge(euint32, uint32)` performs the credit check on ciphertext. No party ever sees the raw score on-chain.
-- **Self-relaying decryption (v0.9+)** — `FHE.makePubliclyDecryptable()` marks the encrypted boolean for off-chain decryption. The client decrypts via the Zama relayer and submits a KMS-signed proof back on-chain via `FHE.checkSignatures()`. No trusted oracle middleman.
-- **AI + FHE pipeline** — Groq API (Llama 3.3-70B) generates credit scores from structured financial signals + document analysis (Llama 4 Scout vision). The score is encrypted via `@zama-fhe/relayer-sdk` and submitted on-chain to Ethereum Sepolia. Novel combination of LLM-based underwriting with homomorphic encryption.
-- **Modular orchestration** — Scorer agents can be rotated, policy thresholds updated, and contract addresses swapped without redeployment.
-- **Live on Ethereum Sepolia** — All contracts deployed and verified, real FHE coprocessor interaction, real KMS decryption.
+The original submission proved the core idea: encrypt a score, check it homomorphically, release USDC. This version goes further on FHE depth, scoring robustness, and the compliance angle.
 
-## On-Chain Proof (Ethereum Sepolia)
+**FHE-computed loan terms.** Max borrow and interest rate are no longer hardcoded. They're computed inside the FHE coprocessor using `FHE.add`, `FHE.mul`, `FHE.sub`, `FHE.min`, and `FHE.max` on the encrypted score. Score 650 maps to $1,000 at 8% APR. Score 850 maps to $10,000 at 2% APR. The borrower never sees the intermediate values, only the finalized loan after KMS-signed proof verification.
 
-Real FHE transactions on Sepolia, verifiable on Etherscan:
+**On-chain reputation flywheel.** Every time a borrower fully repays, `incrementRepaymentCount` is called on the CreditScore contract. That plaintext counter feeds back into the next loan cycle via `FHE.add(encryptedScore, bonus)`, boosting the effective score by +25 points per repayment, capped at 850. Repaying builds credit. The count is visible on-chain; the score it affects stays encrypted.
 
-| Operation | Tx Hash | What It Proves |
+**Richer scoring signals.** The agent now fetches four on-chain signals directly from the chain (wallet age, ETH balance tier, DeFi interaction count, ShadowLend repayment history) and weights them at 40% of the total score alongside the self-reported 60%. These can't be faked. Self-reported data goes through AI document cross-verification; contradictions penalize the score.
+
+**Fraud pre-filter.** Before scoring, the agent checks OFAC sanctions, active outstanding loans, and wallet age. Wallets under 30 days old are capped at 550 regardless of what the AI returns. This happens before any on-chain interaction.
+
+**Selective regulatory disclosure.** The encrypted score is inaccessible by default, even to the contract owner. A 2-of-3 compliance committee must independently call `requestComplianceDecryption(borrower)` before `FHE.allow` grants decrypt access to the designated compliance officer. Committee members are elected by DAO multisig (Gnosis Safe) with a 30-day timelock on any membership change. That window makes collusion attempts visible on-chain before they take effect. The borrower can't block a legitimate vote. The protocol can't trigger one alone.
+
+**AI chat assistant.** A Groq-backed chat widget (Llama 3.3-70B) lives in the app and answers questions about scores, loan terms, and FHE. It reads the user's current score, eligibility, and loan balance when a wallet is connected, so answers are specific rather than generic.
+
+## Technical novelty
+
+**Encrypted threshold check.** `FHE.ge(euint32, uint32)` performs the credit check on ciphertext. No party sees the raw score on-chain.
+
+**FHE loan term arithmetic.** Nine FHE operations per loan cycle compute max borrow and interest rate entirely in encrypted space before the borrower sees any result:
+```
+effectiveScore = FHE.min(FHE.add(base, repaymentBonus), MAX_SCORE)
+safeScore      = FHE.max(effectiveScore, MIN_SCORE)          // underflow guard
+maxLoan        = FHE.min(FHE.add(FHE.mul(FHE.sub(safeScore, 300), 16), 1000), 10000)
+rateBps        = FHE.add(FHE.mul(FHE.sub(MAX_SCORE, safeScore), 3), 200)
+```
+
+**Self-relaying decryption (v0.9+).** `FHE.makePubliclyDecryptable()` marks ciphertexts for KMS decryption. The client submits KMS-signed proofs back on-chain via `FHE.checkSignatures()`. Three separate proof verifications happen per loan finalization (eligibility, max loan, rate). No trusted oracle.
+
+**Repayment-to-reputation loop.** Plaintext `repaymentCount` feeds `FHE.add` inside the next loan's encrypted computation. On-chain behavior improves future loan terms without ever revealing the score.
+
+**2-of-3 compliance gate.** `FHE.allow(score, complianceOfficer)` is only called when `_complianceSigCount[borrower] == 2`. The committee is DAO-governed, not admin-appointed. Membership changes require a 30-day timelock.
+
+**AI + FHE pipeline.** Groq Llama 3.3-70B scores financial signals. Llama 4 Scout vision analyzes uploaded documents and cross-checks them against stated figures. The score is encrypted via `@zama-fhe/relayer-sdk` before leaving the agent. No raw score ever touches the frontend or blockchain.
+
+## On-chain proof (Ethereum Sepolia)
+
+| Operation | Tx hash | What it proves |
 |-----------|---------|----------------|
-| **submitScore** (FHE.fromExternal) | [0x1b9cc528...](https://sepolia.etherscan.io/tx/0x1b9cc5287f4d64f659e6e0ed56401cb27f10bfc1f276ce5317dfbcef839121c0) | Encrypted credit score submitted on-chain as euint32 ciphertext |
+| **submitScore** (FHE.fromExternal) | [0x1b9cc528...](https://sepolia.etherscan.io/tx/0x1b9cc5287f4d64f659e6e0ed56401cb27f10bfc1f276ce5317dfbcef839121c0) | Encrypted credit score submitted as euint32 ciphertext |
 | **submitScore** (FHE.fromExternal) | [0x27f42e53...](https://sepolia.etherscan.io/tx/0x27f42e5328c04d3f1a2debc75cf0abae3196a74c5a57dbb66e69aeb994f98e8e) | Second encrypted score submission |
-| **requestLoan** (FHE.ge + makePubliclyDecryptable) | [0xad935550...](https://sepolia.etherscan.io/tx/0xad93555036d311291ea6fd74f4b96468d977f49447aacae0de19898a849993df) | Homomorphic comparison on encrypted score, eligibility marked for decryption |
+| **requestLoan** (FHE.ge + makePubliclyDecryptable) | [0xad935550...](https://sepolia.etherscan.io/tx/0xad93555036d311291ea6fd74f4b96468d977f49447aacae0de19898a849993df) | Homomorphic comparison + eligibility marked for decryption |
 | **requestLoan** | [0x07a2d9a8...](https://sepolia.etherscan.io/tx/0x07a2d9a8c7cf581cffc0cab19c4795eb13e0e3e76d235f4c17a6facfdd27aeed) | Second loan request with FHE threshold check |
-| **repayLoan** | [0xc520b201...](https://sepolia.etherscan.io/tx/0xc520b20180423defe8901827f40acac851dfc56177e1c5f5cb22f4cbdb7dda14) | Borrower repayment with 5% fee |
+| **repayLoan** | [0xc520b201...](https://sepolia.etherscan.io/tx/0xc520b20180423defe8901827f40acac851dfc56177e1c5f5cb22f4cbdb7dda14) | Repayment with FHE-computed fee |
 
-View all contract activity:
-- [CreditScore contract](https://sepolia.etherscan.io/address/0x7384b26858aCbC14d2aD2473b0Ab7568d1114653)
-- [Orchestrator contract](https://sepolia.etherscan.io/address/0xf4E09ce9caA06E18f28f6faF033d9b8af54B8675)
-- [LendingPool contract](https://sepolia.etherscan.io/address/0x16cF583dFA5F7C06015f028F04596A46636dD00f)
-- [Vault (USD3) contract](https://sepolia.etherscan.io/address/0xdA4e83bC9046498F6Fe13Ea9C21DAB664D337e2e)
+Contracts (redeployed with full FHE arithmetic):
+- [CreditScore](https://sepolia.etherscan.io/address/0xA81619b5d6460EEf3b9BAC0928F131bbE8d610AA)
+- [Orchestrator](https://sepolia.etherscan.io/address/0x2411B413617c515Ff8aB4bFF73D7BAF3Ef46BEAf)
+- [LendingPool](https://sepolia.etherscan.io/address/0xA296833b01C704EdAd3078CD772d0F29855d9Fc3)
+- [Vault (USD3)](https://sepolia.etherscan.io/address/0xe59ADc5a116c519dA0D9C6E912c595e06B3e1F4c)
 
-## Technical Metrics
+## Technical metrics
 
 | Metric | Value |
 |--------|-------|
-| Solidity contracts | 5 (CreditScore, LendingPool, Orchestrator, Ledger, MockUSDC) |
-| Lines of Solidity | 538 |
-| Distinct `FHE.*` operations | 6 (`fromExternal`, `ge`, `allowThis`, `makePubliclyDecryptable`, `toBytes32`, `checkSignatures`) |
-| Total FHE operations per loan cycle | 7 (encrypt → verify → store → compare → mark decryptable → KMS decrypt → verify proof) |
+| Solidity contracts | 5 (CreditScore, LendingPool, Orchestrator, Vault, MockUSDC) |
+| Lines of Solidity | ~600 |
+| Distinct `FHE.*` operations | 11 (`fromExternal`, `ge`, `add`, `mul`, `sub`, `min`, `max`, `asEuint32`, `allowThis`, `makePubliclyDecryptable`, `toBytes32`, `checkSignatures`) |
+| FHE operations per loan cycle | 12 (encrypt → submit → ge check → 9 loan term ops → 3x KMS proof verify) |
 | Encrypted state variables | 2 (`mapping(address => euint32)` scores, `ebool` eligibility per request) |
-| FHE-specific functions | 6 (`submitScore`, `getEncryptedScore`, `scoreAboveThreshold`, `requestLoanFor`, `finalizeLoan`, `getEligibilityHandle`) |
 | Network | Ethereum Sepolia (live, verified on-chain) |
-| Frontend | 4 pages (Landing, App, Profile, Supply) + 5 components + 3 utility modules — 3,245 LOC |
-| Agent server | Express.js scoring + encryption + faucet — 504 LOC |
-| AI scoring signals | 4 weighted factors (payment history 35%, DTI 30%, income 20%, employment 15%) |
+| Frontend | 5 pages + 6 components + 3 utility modules |
+| Agent server | Express.js (scoring, encryption, faucet, chat) |
+| AI scoring signals | 4 on-chain (40%) + 4 self-reported (60%) |
 
-### Gas Estimates (fhEVM devnet)
+### Gas estimates (fhEVM devnet)
 
-| Operation | Estimated Gas |
+| Operation | Estimated gas |
 |-----------|--------------|
 | `submitScore` (FHE.fromExternal + allowThis) | ~200k–300k |
-| `requestLoanFor` (FHE.ge + makePubliclyDecryptable) | ~300k–500k |
-| `finalizeLoan` (FHE.checkSignatures + USDC transfer) | ~100k–150k |
-| `repayLoan` (USDC transferFrom) | ~80k–120k |
+| `requestLoanFor` (FHE.ge + 9 FHE ops + 3x makePubliclyDecryptable) | ~600k–900k |
+| `finalizeLoan` (3x FHE.checkSignatures + USDC transfer) | ~200k–300k |
+| `repayLoan` (USDC transferFrom + incrementRepaymentCount) | ~80k–120k |
 
-> Gas costs are higher than standard EVM due to FHE computation overhead. `TFHE.ge()` is the most expensive operation — it performs a homomorphic comparison on 32-bit encrypted integers.
+Gas is higher than standard EVM because FHE arithmetic runs through the coprocessor. Each `FHE.mul` and `FHE.sub` on 32-bit encrypted integers adds meaningful overhead. That's the tradeoff for doing it on-chain without revealing the values.
 
-## What We Built
+## What we built
 
 | Component | Status | Details |
 |-----------|--------|---------|
-| Smart contracts (5) | Complete | CreditScore, LendingPool, Orchestrator, Ledger, MockUSDC — all compile and deploy |
-| AI scoring agent | Complete | Express server, Groq API (Llama 3.3-70B), fhevmjs encryption, on-chain submission |
-| React frontend | Complete | Real wallet connection, agent API calls, contract interactions, event listeners |
+| Smart contracts (5) | Complete | All compile and deploy. CreditScore has full FHE arithmetic + compliance gate. |
+| AI scoring agent | Complete | Groq Llama 3.3-70B + Llama 4 Scout vision + on-chain signal fetch + OFAC filter |
+| React frontend | Complete | Wallet connection, borrowing, repayment, supply, profile, compliance panel, chat widget |
 | Test suite | 56 tests (24 unit + 32 integration) | Deployment, access control, lifecycle, fees, upgrades, FHE integration |
-| Demo script | Complete | Full end-to-end: Alice approved, Bob denied, repayment |
+| Demo script | Complete | End-to-end: Alice approved, Bob denied, repayment |
 
-## Sponsor Bounty Targeted
+## Sponsor bounty
 
-**Zama (primary)** — fhEVM confidential smart contracts
+**Zama (primary):** fhEVM confidential smart contracts
 
 FHE operations used (v0.9+ API):
-- `FHE.fromExternal()` — verify and convert encrypted input from relayer SDK
-- `FHE.ge()` — encrypted greater-than-or-equal comparison (score >= 650)
-- `FHE.allowThis()` — grant contract access to ciphertext handle
-- `FHE.makePubliclyDecryptable()` — mark encrypted boolean for off-chain decryption
-- `FHE.toBytes32()` — convert handle for signature verification
-- `FHE.checkSignatures()` — verify KMS-signed decryption proof on-chain
-- `ZamaEthereumConfig` — auto-configure Zama coprocessor addresses per chain
+- `FHE.fromExternal()`: verify and convert encrypted input from relayer SDK
+- `FHE.ge()`: encrypted comparison (score >= 650)
+- `FHE.add()`: repayment bonus application, loan floor, rate intercept
+- `FHE.mul()`: loan-per-point scaling, rate-per-point scaling
+- `FHE.sub()`: score delta calculation, rate deficit calculation
+- `FHE.min()`: cap loan at max, cap effective score at 850
+- `FHE.max()`: guard against FHE.sub underflow (score floor at 300)
+- `FHE.asEuint32()`: plaintext-to-encrypted conversion for constants
+- `FHE.allowThis()`: grant contract access to ciphertext handles
+- `FHE.allow()`: grant compliance officer access after 2-of-3 vote
+- `FHE.makePubliclyDecryptable()`: mark ciphertexts for KMS decryption
+- `FHE.toBytes32()`: convert handles for signature verification
+- `FHE.checkSignatures()`: verify KMS-signed decryption proofs on-chain
+- `ZamaEthereumConfig`: auto-configure coprocessor addresses per chain
 
-### Privacy Guarantees
+## Privacy guarantees
 
 | Data | Borrower | Agent | Blockchain | Lender |
 |------|----------|-------|------------|--------|
 | Financial signals | Sees | Sees | Never | Never |
 | Raw credit score | Never | Ephemeral | Never | Never |
 | Encrypted score | No | Submits | `euint32` ciphertext only | No |
-| Eligibility (bool) | Event | No | Decrypted by Gateway oracle | Event |
+| Loan terms (amount, rate) | Final result only | No | Computed in FHE | No |
+| Eligibility (bool) | Event result | No | Decrypted by Gateway | Event result |
 | Loan amount | Yes | No | Public | Yes |
 
-## Competitive Landscape
+## Compliance model
 
-| | ShadowLend | Spectral | Maple Finance | Goldfinch | Credora |
-|---|---|---|---|---|---|
-| **Score privacy** | FHE — score never decrypted on-chain | Plaintext on-chain (MACRO score) | N/A (manual review) | N/A (off-chain auditors) | Centralized score, shared with lenders |
-| **Verification** | Homomorphic comparison (`FHE.ge`) — only boolean revealed | Public smart contract read | Trust-based delegate model | Off-chain backers vouch | API-gated, lender sees rating |
-| **Collateral model** | Undercollateralized (credit-based) | Overcollateralized + credit boost | Undercollateralized (institutional) | Undercollateralized (pooled) | Overcollateralized + credit line |
-| **Scoring method** | AI (Llama 3.3-70B) + document vision analysis | On-chain transaction history | Manual underwriting by pool delegates | Off-chain auditor review | Proprietary algorithm on financials |
-| **Data exposure** | Zero — no party sees all data | Full score visible on-chain | Borrower financials shared with delegates | Shared with auditors/backers | Shared with Credora + lenders |
-| **Decentralization** | Self-relaying decryption, no oracle middleman | On-chain but centralized scoring | Delegate-controlled pools | Backer-governed | Fully centralized |
+Encrypted scores are inaccessible by default. The compliance system satisfies legitimate regulatory obligations without a permanent backdoor.
 
-**ShadowLend's edge:** The only protocol where the credit score is *never* visible to any on-chain participant — not the contract, not the lender, not even the borrower. Every competitor either exposes the score on-chain or shares it with trusted intermediaries.
+When a regulator needs to investigate a borrower, two of the three committee members must independently submit an on-chain vote (`requestComplianceDecryption`). Only after the second vote does the contract call `FHE.allow(score, complianceOfficer)`.
 
-## Adversarial Robustness & Fraud Prevention
+Committee governance:
+- Members are elected by DAO multisig (Gnosis Safe)
+- Membership changes require a 30-day timelock
+- Any swap attempt is visible on-chain for 30 days before it takes effect
+- Every vote emits `ComplianceSignatureAdded`
+- Access grants emit `ComplianceAccessGranted`
 
-### Current Safeguards
+The borrower can't block a legitimate vote. The protocol admin can't trigger one alone. The third committee member's vote has no effect (the `== 2` check ensures `FHE.allow` fires exactly once). The compliance officer gets decrypt access: not the committee members, not the public.
+
+## Adversarial robustness
 
 | Threat | Mitigation |
 |--------|-----------|
-| **Fake/inflated self-reported data** | AI agent cross-references uploaded documents against stated financials. Contradictions (e.g. claimed $100k income, pay stub shows $30k) trigger heavy score penalties. |
-| **Irrelevant document uploads** | Llama 4 Scout vision classifies documents — non-financial uploads (memes, random images) are flagged and treated as zero verification, lowering the score. |
-| **No documents submitted** | Unverified claims receive a moderate penalty — the agent scores conservatively without supporting evidence. |
-| **Score manipulation at agent level** | Agent never returns the raw score to the borrower or frontend. Score is encrypted (TFHE) before leaving the agent and submitted directly on-chain. |
-| **On-chain score tampering** | CreditScore contract is role-gated (`SCORER_ROLE`). Only authorized scorer wallets can submit. Encrypted score is immutable once stored. |
-| **Replay/forged decryption proofs** | `FHE.checkSignatures()` verifies KMS-signed proofs on-chain. Invalid or replayed proofs revert. |
-| **Sybil attacks (multiple wallets)** | One-time faucet per address. Scoring is per-wallet with on-chain history. |
+| Fake/inflated self-reported data | AI cross-references uploaded documents against stated figures. A claimed $100k income with a $30k pay stub triggers a heavy penalty. |
+| Irrelevant document uploads | Llama 4 Scout classifies documents. Non-financial uploads are treated as zero verification. |
+| No documents submitted | Unverified claims receive a moderate penalty. The agent scores conservatively. |
+| Score manipulation at agent level | The agent never returns the raw score to the browser. It's encrypted before leaving the server. |
+| OFAC-sanctioned addresses | Blocked before scoring begins. No application processed. |
+| Fresh wallet fraud | Wallets under 30 days old are hard-capped at 550, regardless of AI output. |
+| On-chain score tampering | CreditScore is role-gated (`SCORER_ROLE`). Only authorized scorer wallets can submit. |
+| Replay/forged decryption proofs | `FHE.checkSignatures()` verifies KMS-signed proofs on-chain. Invalid proofs revert. |
+| Sybil attacks | One-time faucet per address. Scoring is per-wallet with on-chain repayment history. |
+| Compliance committee capture | DAO multisig governance + 30-day timelock. Swap attempts are visible on-chain before they execute. |
 
-### Planned Hardening (Roadmap)
+## Competitive landscape
 
-- **zkTLS verification (Q3 2026)** — Prove financial data directly from bank portals and Credit Karma via zero-knowledge TLS proofs, eliminating self-reported data entirely
-- **Plaid bank connect (Q4 2026)** — Verified income and spending data from linked bank accounts
-- **Multi-signal on-chain reputation** — Cross-reference DeFi participation, transaction history, and DAO contributions as additional encrypted scoring factors
-- **Rate limiting & cooldowns** — Throttle re-scoring attempts to prevent brute-force signal optimization
-- **Agent rotation & multi-agent consensus** — Multiple independent scoring agents must agree before score submission, preventing single-agent compromise
+| | ShadowLend | Spectral | Maple Finance | Goldfinch | Credora |
+|---|---|---|---|---|---|
+| **Score privacy** | FHE: score never decrypted on-chain | Plaintext on-chain (MACRO score) | N/A (manual review) | N/A (off-chain auditors) | Centralized, shared with lenders |
+| **Loan terms** | Computed in FHE on encrypted score | Fixed tiers, score public | Manual underwriting | Off-chain backers | API-gated |
+| **Verification** | `FHE.ge`: only boolean revealed | Public smart contract read | Trust-based delegate model | Off-chain backers vouch | Lender sees rating |
+| **Collateral** | Undercollateralized (credit-based) | Overcollateralized + credit boost | Undercollateralized (institutional) | Undercollateralized (pooled) | Overcollateralized + credit line |
+| **Regulatory compliance** | 2-of-3 DAO committee + timelock | None | Manual | None | Centralized |
+| **Decentralization** | Self-relaying decryption, no oracle | On-chain but centralized scoring | Delegate-controlled pools | Backer-governed | Fully centralized |
 
-## Risk Model & Default Economics
+ShadowLend is the only protocol where the credit score is never visible to any on-chain participant: not the contract, not the lender, not the borrower. Every competitor either exposes the score on-chain or routes it through a trusted intermediary.
 
-Undercollateralized lending carries credit risk. ShadowLend's fee structure and scoring model are designed to keep the pool solvent across realistic default scenarios.
+## Risk model
 
-### Fee Structure
+### Fee structure
 
 | Parameter | Value |
 |-----------|-------|
-| Origination fee | 5% of borrowed amount (500 basis points) |
-| Interest rate | 2%-8% APR (dynamic, inversely proportional to score) |
-| Score threshold | 650 minimum (filters bottom ~30% of applicants) |
-| Max borrow per wallet | $1,000 (score 650) to $10,000 (score 850) |
+| Interest rate | 2%–8% APR (computed in FHE, inversely proportional to score) |
+| Score threshold | 650 minimum |
+| Max borrow | $1,000 (score 650) to $10,000 (score 850) |
 
-### Default Scenario Analysis
+### Default scenario analysis
 
 Assumptions: 100 borrowers, average loan $4,000, average score 720.
 
-| Scenario | Default Rate | Pool Loss | Fee Revenue (5%) | Net Pool Impact |
-|----------|-------------|-----------|-------------------|-----------------|
+| Scenario | Default rate | Pool loss | Fee revenue | Net pool impact |
+|----------|-------------|-----------|-------------|-----------------|
 | Optimistic | 3% | $12,000 | $20,000 | +$8,000 |
-| Baseline | 7% | $28,000 | $20,000 + $8,400 APR | +$400 |
-| Stress | 12% | $48,000 | $20,000 + $14,400 APR | -$13,600 |
+| Baseline | 7% | $28,000 | $28,400 | +$400 |
+| Stress | 12% | $48,000 | $34,400 | -$13,600 |
 
-### How the Scoring Model Mitigates Risk
+The 650 threshold filters the highest-default cohort before they reach the pool. Higher-risk borrowers pay more and borrow less. The fee curve concentrates revenue where it's needed.
 
-1. **AI cross-referencing reduces fraud.** The Groq agent compares stated income against uploaded documents. Contradictions trigger score penalties of up to -200 points, pushing fraudulent applicants below the 650 threshold.
-2. **Higher-risk borrowers pay more.** A borrower scoring 650 pays 8% APR and can only borrow $1,000. A borrower scoring 850 pays 2% APR but borrows up to $10,000. The fee curve concentrates revenue on riskier loans.
-3. **Threshold filtering removes the tail.** The 650 cutoff eliminates the highest-default cohort before they ever reach the pool.
-4. **Pool diversification.** Lenders deposit into a shared ERC4626 vault. Individual defaults are absorbed by the pool, not by a single lender. Lenders see only aggregate utilization and APY.
+## GTM plan
 
-### Planned Risk Enhancements
-
-- **Dynamic threshold adjustment** based on pool utilization (raise threshold when utilization > 80%)
-- **Per-wallet borrow cooldowns** to prevent rapid re-borrowing after repayment
-- **On-chain reputation multiplier** using DeFi history as an additional encrypted signal
-- **Insurance reserve** from a percentage of fees, held in the vault as a first-loss buffer
-
-## GTM Plan
-
-1. **Web3 payroll integration** — Partner with payroll platforms to offer private credit lines to DAO contributors, using on-chain payment history as encrypted input signals
-2. **Multi-signal risk models** — Extend the agent to consume on-chain reputation, transaction history, and DeFi participation as additional encrypted scoring factors
-3. **Institutional lending pools** — Allow lenders to fund pools without seeing individual borrower data — only aggregate default rates
+1. **Web3 payroll integration:** credit lines for DAO contributors using on-chain payment history as encrypted input signals
+2. **Multi-signal risk models:** extend the agent to include on-chain reputation, transaction history, and DeFi participation as additional encrypted scoring factors
+3. **Institutional lending pools:** lenders fund pools without seeing individual borrower data, only aggregate default rates

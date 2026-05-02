@@ -8,7 +8,7 @@ export const FHEVM_CHAIN_ID = 11155111; // Ethereum Sepolia (Zama fhEVM coproces
 // Encrypted contract path ABIs (CreditScore + Orchestrator + LendingPool + USDC)
 export const ORCHESTRATOR_ABI = [
   "function requestLoan(uint256 amount) external returns (uint256)",
-  "function finalizeLoan(uint256 requestId, bool decryptedEligible, bytes decryptionProof) external",
+  "function finalizeLoan(uint256 requestId, bool decryptedEligible, uint256 decryptedMaxLoan, uint256 decryptedRateBps, bytes decryptionProof) external",
   "function getEligibilityHandle(uint256 requestId) external view returns (bytes32)",
   "function repayLoan(uint256 amount) external",
   "event LoanRequested(address indexed borrower, uint256 amount, uint256 requestId)",

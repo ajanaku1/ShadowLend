@@ -32,6 +32,14 @@ const VAULT_ABI = [
   "event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares)",
 ];
 
+const CREDIT_SCORE_ABI = [
+  "function complianceSignatureCount(address borrower) external view returns (uint8)",
+  "function requestComplianceDecryption(address borrower) external",
+  "function hasScore(address borrower) external view returns (bool)",
+  "event ComplianceSignatureAdded(address indexed signer, address indexed borrower, uint8 total)",
+  "event ComplianceAccessGranted(address indexed borrower)",
+];
+
 // localStorage cache key (shared with App.jsx)
 const CACHE_KEY = "shadowlend_score_";
 
@@ -93,6 +101,12 @@ export default function Profile() {
   const [txHistory, setTxHistory] = useState([]);
   const [historyPage, setHistoryPage] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Compliance (2-of-3 committee regulatory disclosure)
+  const [complianceSigs, setComplianceSigs] = useState(0);
+  const [complianceGranted, setComplianceGranted] = useState(false);
+  const [complianceVoting, setComplianceVoting] = useState(false);
+  const [complianceStatus, setComplianceStatus] = useState(null);
 
   // ---------------------------------------------------------------------------
   // Wallet connection
@@ -157,6 +171,18 @@ export default function Profile() {
         setScoreTimestamp(cached.timestamp ? Math.floor(cached.timestamp / 1000) : 0);
         if (cached.factors) {
           setFactors(cached.factors);
+        }
+      }
+
+      // Read compliance signature count
+      if (contractAddresses.CreditScore) {
+        try {
+          const cs = new ethers.Contract(contractAddresses.CreditScore, CREDIT_SCORE_ABI, provider);
+          const count = Number(await cs.complianceSignatureCount(account));
+          setComplianceSigs(count);
+          setComplianceGranted(count >= 2);
+        } catch (e) {
+          console.warn("Compliance fetch failed:", e.message);
         }
       }
 
@@ -283,6 +309,44 @@ export default function Profile() {
   }, [account]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // ---------------------------------------------------------------------------
+  // Compliance vote
+  // ---------------------------------------------------------------------------
+  const castComplianceVote = async () => {
+    if (!contractAddresses.CreditScore) return;
+    setComplianceVoting(true);
+    setComplianceStatus({ type: "wait", text: "Submitting compliance vote on-chain..." });
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer   = await provider.getSigner();
+      const cs       = new ethers.Contract(contractAddresses.CreditScore, CREDIT_SCORE_ABI, signer);
+      const tx       = await cs.requestComplianceDecryption(account);
+      setComplianceStatus({ type: "wait", text: "Waiting for confirmation..." });
+      await tx.wait();
+      const newCount = Number(await cs.complianceSignatureCount(account));
+      setComplianceSigs(newCount);
+      setComplianceGranted(newCount >= 2);
+      setComplianceStatus({
+        type: "ok",
+        text: newCount >= 2
+          ? "2-of-3 DAO votes reached — compliance officer decrypt access granted via FHE.allow."
+          : `Vote recorded (${newCount}/2). One more DAO committee member must vote.`,
+      });
+    } catch (err) {
+      const msg = err?.reason || err?.message || "Transaction failed";
+      setComplianceStatus({
+        type: "err",
+        text: msg.includes("not a compliance committee member")
+          ? "Your wallet is not a compliance committee member."
+          : msg.includes("already signed")
+          ? "You have already voted for this borrower."
+          : `Error: ${msg.slice(0, 120)}`,
+      });
+    } finally {
+      setComplianceVoting(false);
+    }
+  };
 
   // ---------------------------------------------------------------------------
   // Derived
@@ -500,6 +564,80 @@ export default function Profile() {
                   </a>
                 </div>
               </div>
+            </div>
+
+            {/* Regulatory Compliance Card */}
+            <div className="card profile-compliance-card">
+              <div className="compliance-header">
+                <h3 className="card-label" style={{ margin: 0 }}>Regulatory Compliance</h3>
+                <span className={`compliance-badge ${complianceGranted ? "granted" : "pending"}`}>
+                  {complianceGranted ? "Access Granted" : `${complianceSigs}/2 Signatures`}
+                </span>
+              </div>
+
+              <p className="compliance-desc">
+                Your encrypted score is inaccessible by default — including to the protocol owner.
+                Two of three committee members must independently vote on-chain before a compliance
+                officer gets decrypt access. Committee members are elected by DAO multisig (Gnosis Safe)
+                with a 30-day timelock on any membership change, so swap attempts are visible on-chain
+                before they take effect.
+              </p>
+
+              {/* Signature progress */}
+              <div className="compliance-sigs">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className={`compliance-sig-dot ${i < complianceSigs ? "filled" : ""} ${complianceGranted && i < 2 ? "granted" : ""}`}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      {i < complianceSigs ? (
+                        <polyline points="20 6 9 17 4 12" />
+                      ) : (
+                        <circle cx="12" cy="12" r="5" />
+                      )}
+                    </svg>
+                  </div>
+                ))}
+                <span className="compliance-sig-label">
+                  {complianceGranted
+                    ? "Regulator has been granted decryption access"
+                    : complianceSigs === 0
+                    ? "No DAO committee members have voted yet"
+                    : "One more vote required to grant regulator access"}
+                </span>
+              </div>
+
+              {/* Privacy guarantee note */}
+              <div className="compliance-privacy-note">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0110 0v4" />
+                </svg>
+                <span>FHE guarantee: score is <strong>never decrypted on-chain</strong>. Even after a vote, only the designated compliance officer can decrypt — off-chain, via KMS.</span>
+              </div>
+
+              {/* Committee member action */}
+              {!complianceGranted && (
+                <>
+                  <button
+                    className={`btn-fill compliance-vote-btn ${complianceVoting ? "running" : ""}`}
+                    disabled={complianceVoting}
+                    onClick={castComplianceVote}
+                  >
+                    <span>{complianceVoting ? "Submitting..." : "Cast Committee Vote"}</span>
+                    <div className="bar" />
+                  </button>
+                  <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 8 }}>
+                    Only DAO-elected committee members can vote. Non-members are rejected by the contract.
+                    Committee membership changes require a 30-day on-chain timelock.
+                  </p>
+                </>
+              )}
+
+              {complianceStatus && (
+                <div className={`status show ${complianceStatus.type}`} style={{ marginTop: 10, fontSize: 12 }}>
+                  {complianceStatus.type === "wait" && <div className="sp" />}
+                  {complianceStatus.text}
+                </div>
+              )}
             </div>
 
             {/* Transaction History Card */}

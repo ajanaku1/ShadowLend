@@ -127,7 +127,9 @@ contract MockLendingPool is ReentrancyGuard, Pausable {
 
     function finalizeLoan(
         uint256 requestId,
-        bool decryptedEligible,
+        bool    decryptedEligible,
+        uint256 decryptedMaxLoan,
+        uint256 decryptedRateBps,
         bytes memory /* decryptionProof — ignored in mock */
     ) external nonReentrant whenNotPaused {
         PendingRequest storage pending = _pendingRequests[requestId];
@@ -146,7 +148,8 @@ contract MockLendingPool is ReentrancyGuard, Pausable {
         }
 
         require(usdc.transfer(pending.borrower, pending.amount), "transfer failed");
-        uint256 fee = (pending.amount * feeBasisPoints) / 10000;
+        uint256 effectiveRate = decryptedRateBps > 0 ? decryptedRateBps : feeBasisPoints;
+        uint256 fee = (pending.amount * effectiveRate) / 10000;
         uint256 total = pending.amount + fee;
         totalOutstandingDebt += total;
 

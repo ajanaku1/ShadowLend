@@ -7,6 +7,7 @@
     "agent": "node agent/server.js",
     "demo": "node scripts/demo.js",
     "deploy": "hardhat run scripts/deploy.js --network sepolia",
+    "deploy:fhe": "hardhat run scripts/deploy-fhe.js --network sepolia",
     "dev:frontend": "vite --config frontend/vite.config.mjs",
     "test": "hardhat test"
   },

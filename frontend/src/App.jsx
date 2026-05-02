@@ -14,6 +14,7 @@ import Navbar from "./components/Navbar";
 import BorrowerForm from "./components/BorrowerForm";
 import LoanCard from "./components/LoanCard";
 import RepayCard from "./components/RepayCard";
+import ChatAgent from "./components/ChatAgent";
 
 // ---------------------------------------------------------------------------
 // Agent API call
@@ -491,7 +492,13 @@ export default function App() {
           ? "Eligibility confirmed! Finalizing loan on-chain..."
           : "Submitting eligibility result to finalize...",
       });
-      const finalizeTx = await orchestrator.finalizeLoan(requestId, aiEligible, "0x");
+      const finalizeTx = await orchestrator.finalizeLoan(
+        requestId,
+        aiEligible,
+        BigInt(Math.round(creditLimit)),          // whole USDC, no decimals
+        BigInt(Math.round(interestRate * 100)),   // % → basis points
+        "0x"
+      );
       setReqStatus({ type: "wait", text: `Finalization tx submitted (${truncHash(finalizeTx.hash)}). Confirming...` });
       const finalizeReceipt = await finalizeTx.wait();
 
@@ -858,6 +865,15 @@ export default function App() {
           </div>
         </section>
       </div>
+
+      {/* Chat Agent */}
+      <ChatAgent
+        account={account}
+        aiScore={aiScore}
+        aiEligible={aiEligible}
+        loanRemaining={loanRemaining}
+        interestRate={interestRate}
+      />
 
       {/* Float Stats */}
       <div className="float-stats">
