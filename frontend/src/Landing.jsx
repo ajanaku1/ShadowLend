@@ -130,7 +130,7 @@ export default function Landing() {
             <button className="tn-link" onClick={() => document.getElementById("privacy")?.scrollIntoView({ behavior: "smooth" })}>Privacy</button>
           </div>
           <div className="tn-sep" />
-          <a href="/app" target="_blank" rel="noopener noreferrer" className="tn-wallet on" style={{ textDecoration: "none" }}>
+          <a href="/app" className="tn-wallet on" style={{ textDecoration: "none" }}>
             <div className="tn-wdot" />
             <span>Launch App</span>
           </a>
@@ -153,7 +153,7 @@ export default function Landing() {
               single byte of your financial data.
             </p>
             <div className="hero-actions">
-              <a href="/app" target="_blank" rel="noopener noreferrer" className="ha-primary" style={{ textDecoration: "none", textAlign: "center" }}>
+              <a href="/app" className="ha-primary" style={{ textDecoration: "none", textAlign: "center" }}>
                 Launch App
               </a>
               <button className="ha-ghost" onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}>
@@ -407,7 +407,7 @@ export default function Landing() {
           <div className="cta-card">
             <h2>Ready for a Private Credit Line?</h2>
             <p>Connect your wallet, submit your financial data, and get an instant credit line decision — all without revealing your credit score.</p>
-            <a href="/app" target="_blank" rel="noopener noreferrer" className="ha-primary" style={{ textDecoration: "none", textAlign: "center", display: "inline-block" }}>
+            <a href="/app" className="ha-primary" style={{ textDecoration: "none", textAlign: "center", display: "inline-block" }}>
               Launch App
             </a>
           </div>
