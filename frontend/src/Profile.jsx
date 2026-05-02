@@ -201,21 +201,34 @@ export default function Profile() {
         setUsdcBalance(Number(ethers.formatUnits(bal, 6)));
       }
 
-      // Transaction history from Orchestrator events
+      // Transaction history from Orchestrator events (current + legacy deployments)
       if (contractAddresses.Orchestrator) {
-        const orchestrator = new ethers.Contract(contractAddresses.Orchestrator, ORCHESTRATOR_ABI, provider);
-        // Use deploy block to avoid RPC range limits on Sepolia
         const deployBlock = contractAddresses.DeployBlock || 0;
         const currentBlock = await provider.getBlockNumber();
-        // If no deploy block saved, search last 100k blocks (~2 weeks on Sepolia)
         const fromBlock = deployBlock || Math.max(0, currentBlock - 100000);
 
-        const [reqEvents, approvedEvents, deniedEvents, repaidEvents, installmentEvents] = await Promise.all([
-          orchestrator.queryFilter(orchestrator.filters.LoanRequested(account), fromBlock, "latest"),
-          orchestrator.queryFilter(orchestrator.filters.LoanApproved(account), fromBlock, "latest"),
-          orchestrator.queryFilter(orchestrator.filters.LoanDenied(account), fromBlock, "latest"),
-          orchestrator.queryFilter(orchestrator.filters.LoanRepaid(account), fromBlock, "latest"),
-          orchestrator.queryFilter(orchestrator.filters.InstallmentPaid(account), fromBlock, "latest"),
+        // Collect all orchestrator instances to query (current + any legacy)
+        const orchestratorSources = [
+          { contract: new ethers.Contract(contractAddresses.Orchestrator, ORCHESTRATOR_ABI, provider), fromBlock },
+          ...((contractAddresses.LegacyOrchestrators || []).map((leg) => ({
+            contract: new ethers.Contract(leg.address, ORCHESTRATOR_ABI, provider),
+            fromBlock: leg.fromBlock || 0,
+          }))),
+        ];
+
+        const [approvedEvents, deniedEvents, repaidEvents, installmentEvents] = await Promise.all([
+          Promise.all(orchestratorSources.map(({ contract, fromBlock: fb }) =>
+            contract.queryFilter(contract.filters.LoanApproved(account), fb, "latest").catch(() => [])
+          )).then((r) => r.flat()),
+          Promise.all(orchestratorSources.map(({ contract, fromBlock: fb }) =>
+            contract.queryFilter(contract.filters.LoanDenied(account), fb, "latest").catch(() => [])
+          )).then((r) => r.flat()),
+          Promise.all(orchestratorSources.map(({ contract, fromBlock: fb }) =>
+            contract.queryFilter(contract.filters.LoanRepaid(account), fb, "latest").catch(() => [])
+          )).then((r) => r.flat()),
+          Promise.all(orchestratorSources.map(({ contract, fromBlock: fb }) =>
+            contract.queryFilter(contract.filters.InstallmentPaid(account), fb, "latest").catch(() => [])
+          )).then((r) => r.flat()),
         ]);
 
         const tsCache = {};

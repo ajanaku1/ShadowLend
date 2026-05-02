@@ -4,5 +4,8 @@
   "LendingPool": "0xA296833b01C704EdAd3078CD772d0F29855d9Fc3",
   "Orchestrator": "0x2411B413617c515Ff8aB4bFF73D7BAF3Ef46BEAf",
   "Vault": "0xe59ADc5a116c519dA0D9C6E912c595e06B3e1F4c",
-  "DeployBlock": 10776045
+  "DeployBlock": 10776045,
+  "LegacyOrchestrators": [
+    { "address": "0xf4e09ce9caa06e18f28f6faf033d9b8af54b8675", "fromBlock": 10457578 }
+  ]
 }
