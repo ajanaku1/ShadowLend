@@ -126,7 +126,7 @@ describe("ShadowLendVault (USD3)", function () {
       const loanAmt = ethers.parseUnits("100000", 6);
       const orc = orchestrator.connect(alice);
       await orc.requestLoan(loanAmt);
-      await orc.finalizeLoan(0, true, "0x");
+      await orc.finalizeLoan(0, true, 100000, 500, "0x");
 
       // Pool now has very little idle USDC
       const poolIdle = await usdc.balanceOf(await pool.getAddress());
@@ -146,7 +146,7 @@ describe("ShadowLendVault (USD3)", function () {
       const loanAmt = ethers.parseUnits("1000", 6);
       const orc = orchestrator.connect(alice);
       await orc.requestLoan(loanAmt);
-      await orc.finalizeLoan(0, true, "0x");
+      await orc.finalizeLoan(0, true, 1000, 500, "0x");
 
       // Alice got 1000 USDC, owes 1050 (5% fee)
       // Repay full amount
@@ -173,7 +173,7 @@ describe("ShadowLendVault (USD3)", function () {
       const loanAmt = ethers.parseUnits("1000", 6);
       const orc = orchestrator.connect(alice);
       await orc.requestLoan(loanAmt);
-      await orc.finalizeLoan(0, true, "0x");
+      await orc.finalizeLoan(0, true, 1000, 500, "0x");
       const repayAmt = ethers.parseUnits("1050", 6);
       await usdc.connect(alice).approve(await pool.getAddress(), repayAmt);
       await orc.repayLoan(repayAmt);
@@ -188,7 +188,7 @@ describe("ShadowLendVault (USD3)", function () {
       await pool.setEligibility(alice.address, true);
       const orc = orchestrator.connect(alice);
       await orc.requestLoan(ethers.parseUnits("1000", 6));
-      await orc.finalizeLoan(0, true, "0x");
+      await orc.finalizeLoan(0, true, 1000, 500, "0x");
       await usdc.connect(alice).approve(await pool.getAddress(), ethers.parseUnits("1050", 6));
       await orc.repayLoan(ethers.parseUnits("1050", 6));
 

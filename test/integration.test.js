@@ -75,7 +75,7 @@ describe("ShadowLend Integration (Mock)", function () {
       expect(requestId).to.not.be.undefined;
 
       // Finalize with eligible = true
-      const finTx = await orchestrator.connect(alice).finalizeLoan(requestId, true, "0x");
+      const finTx = await orchestrator.connect(alice).finalizeLoan(requestId, true, 1000, 500, "0x");
       const finReceipt = await finTx.wait();
 
       // Check LoanApproved event
@@ -119,7 +119,7 @@ describe("ShadowLend Integration (Mock)", function () {
         } catch {}
       }
 
-      const finTx = await orchestrator.connect(alice).finalizeLoan(requestId, false, "0x");
+      const finTx = await orchestrator.connect(alice).finalizeLoan(requestId, false, 0, 0, "0x");
       const finReceipt = await finTx.wait();
 
       let denied = false;
@@ -148,9 +148,9 @@ describe("ShadowLend Integration (Mock)", function () {
         } catch {}
       }
 
-      await orchestrator.connect(alice).finalizeLoan(requestId, true, "0x");
+      await orchestrator.connect(alice).finalizeLoan(requestId, true, 1000, 500, "0x");
       await expect(
-        orchestrator.connect(alice).finalizeLoan(requestId, true, "0x")
+        orchestrator.connect(alice).finalizeLoan(requestId, true, 1000, 500, "0x")
       ).to.be.revertedWith("already finalized");
     });
 
@@ -166,7 +166,7 @@ describe("ShadowLend Integration (Mock)", function () {
           if (parsed.name === "LoanRequested") { requestId = parsed.args[2]; break; }
         } catch {}
       }
-      await orchestrator.connect(alice).finalizeLoan(requestId, true, "0x");
+      await orchestrator.connect(alice).finalizeLoan(requestId, true, 1000, 500, "0x");
 
       // Second loan should succeed (top-up)
       const topUpAmount = 500n * 10n ** 6n; // 500 USDC
@@ -179,7 +179,7 @@ describe("ShadowLend Integration (Mock)", function () {
           if (parsed.name === "LoanRequested") { requestId2 = parsed.args[2]; break; }
         } catch {}
       }
-      await orchestrator.connect(alice).finalizeLoan(requestId2, true, "0x");
+      await orchestrator.connect(alice).finalizeLoan(requestId2, true, 500, 500, "0x");
 
       // Check accumulated loan
       const loan = await mockPool.loans(alice.address);
@@ -211,7 +211,7 @@ describe("ShadowLend Integration (Mock)", function () {
           if (parsed.name === "LoanRequested") { requestId = parsed.args[2]; break; }
         } catch {}
       }
-      await orchestrator.connect(alice).finalizeLoan(requestId, true, "0x");
+      await orchestrator.connect(alice).finalizeLoan(requestId, true, 1000, 500, "0x");
     });
 
     it("should allow partial repayment", async function () {
@@ -336,7 +336,7 @@ describe("ShadowLend Integration (Mock)", function () {
           if (parsed.name === "LoanRequested") { requestId = parsed.args[2]; break; }
         } catch {}
       }
-      await orchestrator.connect(alice).finalizeLoan(requestId, true, "0x");
+      await orchestrator.connect(alice).finalizeLoan(requestId, true, 1000, 500, "0x");
 
       // Pause
       await orchestrator.pause();
@@ -413,7 +413,7 @@ describe("ShadowLend Integration (Mock)", function () {
           if (parsed.name === "LoanRequested") { requestId = parsed.args[2]; break; }
         } catch {}
       }
-      await orchestrator.connect(alice).finalizeLoan(requestId, true, "0x");
+      await orchestrator.connect(alice).finalizeLoan(requestId, true, 1000, 1000, "0x");
 
       const loan = await mockPool.loans(alice.address);
       // 10% fee: 1000 * 1000 / 10000 = 100

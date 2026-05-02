@@ -56,11 +56,19 @@ rateBps        = FHE.add(FHE.mul(FHE.sub(MAX_SCORE, safeScore), 3), 200)
 | **requestLoan** | [0x07a2d9a8...](https://sepolia.etherscan.io/tx/0x07a2d9a8c7cf581cffc0cab19c4795eb13e0e3e76d235f4c17a6facfdd27aeed) | Second loan request with FHE threshold check |
 | **repayLoan** | [0xc520b201...](https://sepolia.etherscan.io/tx/0xc520b20180423defe8901827f40acac851dfc56177e1c5f5cb22f4cbdb7dda14) | Repayment with FHE-computed fee |
 
-Contracts (redeployed with full FHE arithmetic):
+Current contracts (block 10,776,045):
 - [CreditScore](https://sepolia.etherscan.io/address/0xA81619b5d6460EEf3b9BAC0928F131bbE8d610AA)
 - [Orchestrator](https://sepolia.etherscan.io/address/0x2411B413617c515Ff8aB4bFF73D7BAF3Ef46BEAf)
 - [LendingPool](https://sepolia.etherscan.io/address/0xA296833b01C704EdAd3078CD772d0F29855d9Fc3)
 - [Vault (USD3)](https://sepolia.etherscan.io/address/0xe59ADc5a116c519dA0D9C6E912c595e06B3e1F4c)
+
+### Note on contract redeployment
+
+The five proof transactions above hit an earlier Orchestrator (`0xf4e09...8675`, starting at block 10,457,578). That deployment used a 3-argument `finalizeLoan` signature. After adding FHE-computed loan terms (the `decryptedMaxLoan` and `decryptedRateBps` outputs), the function signature changed to five arguments, requiring a redeploy.
+
+The redeployment did not wipe user history. The frontend queries both contract generations in parallel using `LegacyOrchestrators` in `contracts.json`, so transactions from the original deployment still appear in the Profile page. On-chain activity from the proof transactions is visible at the original Orchestrator address.
+
+The proof transactions are valid: they demonstrate FHE score submission, encrypted threshold comparison, and loan finalization on Sepolia. The current deployment adds FHE loan term arithmetic on top of the same core flow.
 
 ## Technical metrics
 
@@ -94,7 +102,7 @@ Gas is higher than standard EVM because FHE arithmetic runs through the coproces
 | Smart contracts (5) | Complete | All compile and deploy. CreditScore has full FHE arithmetic + compliance gate. |
 | AI scoring agent | Complete | Groq Llama 3.3-70B + Llama 4 Scout vision + on-chain signal fetch + OFAC filter |
 | React frontend | Complete | Wallet connection, borrowing, repayment, supply, profile, compliance panel, chat widget |
-| Test suite | 56 tests (24 unit + 32 integration) | Deployment, access control, lifecycle, fees, upgrades, FHE integration |
+| Test suite | 53 passing, 2 pending | Deployment, access control, lifecycle, fees, upgrades. 2 fhEVM devnet tests skipped on Hardhat local (require live coprocessor). |
 | Demo script | Complete | End-to-end: Alice approved, Bob denied, repayment |
 
 ## Sponsor bounty
@@ -198,3 +206,90 @@ The 650 threshold filters the highest-default cohort before they reach the pool.
 1. **Web3 payroll integration:** credit lines for DAO contributors using on-chain payment history as encrypted input signals
 2. **Multi-signal risk models:** extend the agent to include on-chain reputation, transaction history, and DeFi participation as additional encrypted scoring factors
 3. **Institutional lending pools:** lenders fund pools without seeing individual borrower data, only aggregate default rates
+
+## Developer experience
+
+### Running locally
+
+**Prerequisites:** Node.js 20+, a Sepolia RPC URL, a Groq API key.
+
+```bash
+git clone https://github.com/Bamijohn/shadowlend
+cd shadowlend
+npm install
+```
+
+Set up environment variables:
+
+```bash
+cp agent/.env.example agent/.env
+# Fill in: GROQ_API_KEY, SEPOLIA_RPC_URL, SCORER_PRIVATE_KEY
+```
+
+Start the scoring agent:
+
+```bash
+node agent/server.js
+```
+
+Start the frontend (separate terminal):
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The app runs at `http://localhost:5173`. Connect MetaMask on Sepolia and the faucet endpoint drops 1,000 test USDC automatically on first visit.
+
+### Running tests
+
+```bash
+npx hardhat test
+```
+
+53 tests pass against a local Hardhat node with `MockLendingPool` (no FHE dependency). The 2 pending tests require a live fhEVM devnet with a running coprocessor:
+
+```bash
+npx hardhat test --network fhevmDevnet
+```
+
+### Deploying contracts
+
+```bash
+npx hardhat run scripts/deploy.js --network sepolia
+```
+
+After deployment, copy the output addresses into `frontend/src/contracts.json` and `agent/.env`. The `LegacyOrchestrators` array in `contracts.json` preserves query coverage across redeployments.
+
+### Project structure
+
+```
+contracts/
+  CreditScore.sol          FHE score storage + compliance gate
+  LendingPool.sol          Liquidity pool + FHE loan term logic
+  ShadowLendOrchestrator.sol  UUPS proxy: entry point for all user actions
+  ShadowLendVault.sol      ERC4626 vault (USD3 shares)
+  mocks/MockLendingPool.sol   Test double (no FHE)
+
+agent/
+  server.js                Express scoring server (Groq + TFHE encryption)
+
+frontend/src/
+  App.jsx                  Wallet connection + routing
+  Profile.jsx              Transaction history (queries current + legacy orchestrators)
+  Supply.jsx               ERC4626 deposit/withdraw UI
+  config/constants.js      ABI fragments + chain config
+
+test/
+  integration.test.js      53 Hardhat tests (mock-based)
+  Vault.test.js            ERC4626 vault tests
+```
+
+### Adding a scoring signal
+
+The agent scores eight signals. To add a ninth, edit `agent/server.js` in `buildScoringPrompt()`: add the signal name, weight, and fetch logic alongside the existing on-chain lookups. The encrypted output is unaffected; the agent always encrypts the final integer score before any on-chain submission.
+
+### Compliance committee
+
+The compliance committee addresses live in `CreditScore.sol` as `_committeeMembers[0..2]`. To replace a member, call `proposeCommitteeMemberChange(index, newAddress)` via the Gnosis Safe multisig. The change executes after the 30-day timelock expires. Any swap attempt is visible on-chain immediately.

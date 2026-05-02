@@ -19,8 +19,8 @@ const FEATURES = [
         <circle cx="12" cy="16" r="2" />
       </svg>
     ),
-    title: "Fully Encrypted",
-    desc: "Your credit score is encrypted with TFHE before touching the blockchain. The raw number never exists on-chain.",
+    title: "Fully encrypted",
+    desc: "Your score is encrypted with TFHE before it leaves the agent. The raw number never touches the blockchain. Only a 32-bit ciphertext does.",
   },
   {
     icon: (
@@ -28,8 +28,8 @@ const FEATURES = [
         <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
       </svg>
     ),
-    title: "AI-Powered Scoring",
-    desc: "Groq AI evaluates 4 financial signals with weighted scoring. Upload documents for verified, trustworthy results.",
+    title: "8-signal AI scoring",
+    desc: "Groq Llama 3.3-70B scores 8 signals. Four come from on-chain data: wallet age, ETH balance, DeFi activity, repayment history. Four you submit. Llama 4 Scout checks your documents against what you said.",
   },
   {
     icon: (
@@ -38,8 +38,8 @@ const FEATURES = [
         <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
-    title: "Homomorphic Verification",
-    desc: "Smart contracts check score ≥ 650 on encrypted data. Only a boolean (eligible/not) is ever decrypted.",
+    title: "Loan terms in FHE",
+    desc: "The contract checks score >= 650 on ciphertext. Your borrow limit and interest rate are computed in the same encrypted space. No raw values come out until the Zama KMS signs the decryption.",
   },
   {
     icon: (
@@ -47,23 +47,36 @@ const FEATURES = [
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       </svg>
     ),
-    title: "Zero Data Leakage",
-    desc: "No party sees all the data. The borrower, agent, blockchain, and lender each see only what they need.",
+    title: "No backdoors",
+    desc: "Your score is locked by default, including from the contract owner. A 2-of-3 compliance committee must vote on-chain before anyone gets decrypt access. Membership changes take 30 days.",
+  },
+  {
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+        <polyline points="17 6 23 6 23 12" />
+      </svg>
+    ),
+    title: "Repayment builds credit",
+    desc: "Every full repayment adds 25 points to your effective score on the next loan. The counter sits on-chain. The boost runs through FHE.add on your ciphertext, so the score itself stays encrypted.",
+  },
+  {
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+      </svg>
+    ),
+    title: "AI chat assistant",
+    desc: "Ask anything about your score, loan terms, or how FHE works. When your wallet is connected, answers pull from your actual on-chain state rather than giving generic responses.",
   },
 ];
 
-const STATS = [
-  { value: "100%", label: "Privacy", color: "var(--green)" },
-  { value: "5", label: "FHE Operations", color: "var(--indigo)" },
-  { value: "4", label: "Smart Contracts", color: "var(--teal)" },
-  { value: "650", label: "Score Threshold", color: "var(--indigo2)" },
-];
 
 const ROADMAP = [
-  { phase: "Q2 2026", title: "Bank Connect via Plaid", desc: "Link bank accounts for verified income and spending data — no manual entry.", icon: "bank", status: "next" },
+  { phase: "Q2 2026", title: "Bank Connect via Plaid", desc: "Link your bank account directly. Income, spending, and account history feed into the scoring model without manual entry.", icon: "bank", status: "next" },
   { phase: "Q3 2026", title: "zkTLS Verification", desc: "Prove financial data from Credit Karma, bank portals, and more using zero-knowledge TLS proofs.", icon: "shield", status: "planned" },
   { phase: "Q4 2026", title: "Revolving Credit Lines", desc: "Draw, repay, and re-draw up to your limit without reapplying. Like a crypto credit card.", icon: "refresh", status: "planned" },
-  { phase: "2027", title: "Multi-Chain Deployment", desc: "Deploy ShadowLend pools across Ethereum L2s — Arbitrum, Base, and Polygon.", icon: "globe", status: "planned" },
+  { phase: "2027", title: "Multi-Chain Deployment", desc: "ShadowLend pools on Arbitrum, Base, and Polygon. Same FHE guarantees, lower gas.", icon: "globe", status: "planned" },
 ];
 
 export default function Landing() {
@@ -148,9 +161,9 @@ export default function Landing() {
               <span className="glow">Revealing Anything</span>
             </h1>
             <p className="hero-p">
-              Your credit score is computed by AI, encrypted with fully
-              homomorphic encryption, and verified on-chain — without exposing a
-              single byte of your financial data.
+              Groq AI scores your financial signals, encrypts the result with
+              TFHE, and submits it to the contract. The contract checks
+              eligibility on ciphertext. Nobody sees the number.
             </p>
             <div className="hero-actions">
               <a href="/app" className="ha-primary" style={{ textDecoration: "none", textAlign: "center" }}>
@@ -201,7 +214,7 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* Stats Bar — live + protocol facts */}
+        {/* Stats Bar: live + protocol facts */}
         <section className="landing-stats">
           <div className="ls-item">
             <div className="ls-value" style={{ color: "var(--green)" }}>
@@ -216,7 +229,7 @@ export default function Landing() {
             <div className="ls-label">Loans Issued</div>
           </div>
           <div className="ls-item">
-            <div className="ls-value" style={{ color: "var(--teal)" }}>6</div>
+            <div className="ls-value" style={{ color: "var(--teal)" }}>12</div>
             <div className="ls-label">FHE Operations</div>
           </div>
           <div className="ls-item">
@@ -242,7 +255,7 @@ export default function Landing() {
               </svg>
               <div className="hiw-label">Submit Signals</div>
               <div className="hiw-desc">
-                Enter income, employment, debt, and payment history. Upload bank statements or invoices as proof. Data is sent only to the AI agent — never stored.
+                Enter income, employment, debt, and payment history. Upload a bank statement or pay stub. The agent reads it, scores you, and discards it. Nothing is stored.
               </div>
               <span className="hiw-arrow">&#x2192;</span>
             </div>
@@ -255,7 +268,7 @@ export default function Landing() {
               </svg>
               <div className="hiw-label">AI Scores & Encrypts</div>
               <div className="hiw-desc">
-                Groq AI computes a credit score (300-850) from your signals and documents. The agent encrypts it with TFHE before any chain interaction.
+                Groq scores your signals (300-850). Llama 4 Scout checks your documents against what you submitted. Contradictions drop your score. The result is encrypted with TFHE before it touches the chain.
               </div>
               <span className="hiw-arrow">&#x2192;</span>
             </div>
@@ -267,7 +280,7 @@ export default function Landing() {
               </svg>
               <div className="hiw-label">On-Chain Verification</div>
               <div className="hiw-desc">
-                The smart contract checks score &ge; 650 homomorphically. The raw score never exists on-chain — only ciphertext.
+                The contract runs FHE.ge(score, 650) on ciphertext. Pass the threshold and it computes your loan ceiling and interest rate inside the FHE coprocessor. Your score stays encrypted throughout.
               </div>
               <span className="hiw-arrow">&#x2192;</span>
             </div>
@@ -278,7 +291,7 @@ export default function Landing() {
               </svg>
               <div className="hiw-label">USDC Released</div>
               <div className="hiw-desc">
-                If eligible, USDC is transferred instantly. If denied, only "not eligible" is revealed — never why.
+                If eligible, your loan amount and rate are decrypted by the Zama KMS and USDC is transferred. If denied, you get one boolean. Nothing else.
               </div>
             </div>
           </div>
@@ -405,8 +418,8 @@ export default function Landing() {
         {/* CTA */}
         <section className="landing-cta">
           <div className="cta-card">
-            <h2>Ready for a Private Credit Line?</h2>
-            <p>Connect your wallet, submit your financial data, and get an instant credit line decision — all without revealing your credit score.</p>
+            <h2>Get a loan without showing your score.</h2>
+            <p>Connect your wallet, submit your financial data, and get a credit decision in seconds. Your score stays encrypted throughout.</p>
             <a href="/app" className="ha-primary" style={{ textDecoration: "none", textAlign: "center", display: "inline-block" }}>
               Launch App
             </a>
@@ -419,7 +432,7 @@ export default function Landing() {
             <div className="tn-logo" style={{ width: 20, height: 20 }}>
               <img src="/logo.png" alt="ShadowLend" />
             </div>
-            <span style={{ fontSize: 13, color: "var(--text3)" }}>ShadowLend — Powered by </span>
+            <span style={{ fontSize: 13, color: "var(--text3)" }}>ShadowLend, powered by </span>
             <a href="https://www.zama.org/" target="_blank" rel="noopener noreferrer" style={{ color: "#818cf8", fontWeight: 700, fontSize: 13, textDecoration: "none" }}>Zama fhEVM</a>
           </div>
           <div className="lf-right">
@@ -428,7 +441,7 @@ export default function Landing() {
         </footer>
       </div>
 
-      {/* Float Stats — live from chain */}
+      {/* Float Stats: live from chain */}
       <div className="float-stats">
         <div className="fs-item">
           <div className="fs-dot g" /> FHE Active

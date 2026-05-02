@@ -7,7 +7,7 @@ Borrow without collateral. Your credit score is encrypted on-chain with TFHE; th
 [![Zama fhEVM](https://img.shields.io/badge/Zama-fhEVM_v0.9+-6366f1)](https://www.zama.org/)
 [![Groq](https://img.shields.io/badge/Groq-Llama_3.3--70B-f55036)](https://groq.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-56_passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-53_passing-brightgreen)]()
 [![Zama Bounty](https://img.shields.io/badge/Sponsor_Bounty-Zama_fhEVM-6366f1?style=for-the-badge)](https://www.zama.org/)
 
 ![Architecture](docs/images/architecture.svg)
@@ -194,7 +194,7 @@ ShadowLend/
         Navbar.jsx
         ChatAgent.jsx           # AI chat assistant widget
       config/                   # Constants, ABIs
-  test/                         # 56+ tests (unit + integration + vault)
+  test/                         # 53 passing tests (unit + integration + vault)
   scripts/
     deploy.js
     demo.js
