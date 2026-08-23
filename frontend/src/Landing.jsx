@@ -437,6 +437,7 @@ export default function Landing() {
           </div>
           <div className="lf-right">
             <span style={{ fontSize: 12, color: "var(--text3)" }}>PL Genesis Hackathon 2026</span>
+            <a href="https://x.com/curioswhispers" target="_blank" rel="noopener noreferrer" style={{ color: "#818cf8", fontWeight: 700, fontSize: 12, textDecoration: "none" }}>@curioswhispers</a>
           </div>
         </footer>
       </div>
